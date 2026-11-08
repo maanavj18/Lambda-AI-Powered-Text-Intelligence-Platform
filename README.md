@@ -18,6 +18,6 @@ Lamda is a text intelligence system that predicts the sentiment of Amazon food r
 
 The system has three layers. Raw reviews are converted into at least two numerical feature representations (for example, bag-of-words, TF-IDF, word embeddings, or character n-grams). 
 
-two classical models (for example, Naive Bayes, logistic regression, a Gaussian mixture model, or k-nearest neighbors) are trained, tuned, and compared. At least one deep or modern NLP model (for example, a feedforward network, an LSTM, or a pretrained transformer such as DistilBERT) is trained and compared against those baselines.
+ We use Naive Bayes and Logistic Regression our classical models to create a baseline. Then we train LSTM compare against those baselines.
 
 
