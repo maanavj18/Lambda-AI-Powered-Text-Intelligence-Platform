@@ -19,3 +19,33 @@ Lamda is a text intelligence system that predicts the sentiment of Amazon food r
 The system has three layers. Raw reviews are converted into at least two numerical feature representations (for example, bag-of-words, TF-IDF, word embeddings, or character n-grams). 
 
  We use Naive Bayes and Logistic Regression our classical models to create a baseline. Then we train LSTM compare against those baselines.
+
+## How to Run
+
+Requires Python 3.10+. Run all commands from the repository root.
+
+1. **Create and activate a virtual environment**
+
+   ```bash
+   python -m venv .venv
+   # Windows
+   .venv\Scripts\activate
+   # macOS/Linux
+   source .venv/bin/activate
+   ```
+
+2. **Install dependencies**
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Get the trained model.** The app loads `sentiment.joblib` from `models/` (or `notebooks/models/`). If it is missing, run all cells in [notebooks/1_data_clean.ipynb](notebooks/1_data_clean.ipynb); the last cell trains the model and saves it.
+
+4. **Launch the app**
+
+   ```bash
+   streamlit run app.py
+   ```
+
+   Streamlit opens the app in your browser (default http://localhost:8501). Type a review and click **Predict sentiment**.
