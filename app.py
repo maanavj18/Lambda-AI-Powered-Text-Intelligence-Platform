@@ -4,7 +4,7 @@ Run with:  streamlit run app.py
 """
 import streamlit as st
 
-from src.evaluate import predict
+from src.predict import predict
 
 st.set_page_config(page_title="Food Review Sentiment", page_icon="🍽️")
 
