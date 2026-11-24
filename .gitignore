@@ -1,0 +1,8 @@
+# Dataset files: download them instead (see data/ and the notebook)
+*.csv
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
