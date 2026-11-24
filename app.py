@@ -1,10 +1,12 @@
-"""Streamlit front end: type a review, see each model's sentiment prediction.
+"""Streamlit front end: classify a review, then read about the data and model results.
 
 Run with:  streamlit run app.py
 """
 import pandas as pd
 import streamlit as st
 
+import app_charts as charts
+import app_data as data
 from src.evaluate import clean, load_model, predict
 
 # Models shown side by side on the Predict tab: display name -> predict function.
@@ -103,11 +105,37 @@ with about_tab:
     )
 
     st.subheader("Data")
+    labeled = sum(data.LABEL_COUNTS.values())
+    positive_share = data.LABEL_COUNTS["Positive"] / labeled
     st.write(
-        "The model uses a 50,000-review sample of the "
-        "[Amazon Fine Food Reviews](https://www.kaggle.com/datasets/snap/amazon-fine-food-reviews) dataset. "
-        "Reviews with 4 or 5 stars are labeled positive, 1 or 2 stars negative, and 3-star reviews are left out."
+        f"We use a {data.SAMPLE_ROWS:,}-review random sample of the "
+        "[Amazon Fine Food Reviews](https://www.kaggle.com/datasets/snap/amazon-fine-food-reviews) dataset "
+        f"({data.FULL_DATASET_ROWS:,} reviews in total). Reviews with 4 or 5 stars are labeled positive, "
+        "1 or 2 stars negative, and 3-star reviews are left out."
     )
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Reviews in sample", f"{data.SAMPLE_ROWS:,}")
+    c2.metric("Used after cleaning", f"{data.CLEANING_STEPS['Duplicates removed']:,}")
+    c3.metric("Positive", f"{positive_share:.0%}")
+    c4.metric("Avg. length", f"{data.AVG_WORDS:.0f} words", help=f"Median: {data.MEDIAN_WORDS} words")
+
+    st.altair_chart(charts.star_distribution(data.SCORE_COUNTS), width="stretch")
+    st.caption(
+        f"Most reviews are 5 stars, so the classes are imbalanced: about {positive_share:.0%} of labeled "
+        "reviews are positive. A model that always says \"positive\" would already be right that often."
+    )
+
+    st.markdown("**Data quality issues**")
+    st.table(pd.DataFrame(
+        {
+            "Issue": [
+                "Duplicate reviews (same user, time and text)",
+                *[f"Missing {column}" for column in data.MISSING_VALUES],
+            ],
+            "Count": [f"{data.DUPLICATE_REVIEWS:,}", *[f"{n:,}" for n in data.MISSING_VALUES.values()]],
+            "How it was handled": ["Removed", "Replaced with empty text", "Not used by the model"],
+        }
+    ).set_index("Issue"))
 
     st.subheader("Model")
     st.write(
@@ -115,6 +143,32 @@ with about_tab:
         "in the review, gives every word a learned weight, and adds the weights up. Word order is ignored. "
         "A second model will be shown next to it for comparison once it is connected."
     )
+
+    st.subheader("How the models performed")
+    train_total = sum(data.SPLIT["Training set"].values())
+    test_total = sum(data.SPLIT["Test set"].values())
+    st.write(
+        f"Models were trained on {train_total:,} reviews (80%) and scored on {test_total:,} held-out reviews "
+        "(20%) they never saw during training. The majority baseline always answers \"positive\"; a model has "
+        "to beat it to show it is learning anything."
+    )
+    results = data.MODEL_RESULTS
+    table = pd.DataFrame([
+        {"Model": name, "Accuracy": r["accuracy"], "Precision": r["precision"], "Recall": r["recall"], "F1": r["f1"]}
+        for name, r in results.items()
+    ]).set_index("Model")
+    st.table(table.style.format("{:.3f}"))
+    st.caption(
+        "Precision, recall and F1 are macro averages, so negative and positive reviews count equally. "
+        "That is why the baseline's accuracy looks high while its F1 is low."
+    )
+
+    st.markdown("**Confusion matrices**")
+    st.caption("Rows are the true label, columns the prediction. The diagonal is correct; the other two cells are mistakes.")
+    for column, (name, r) in zip(st.columns(len(results)), results.items()):
+        with column:
+            st.altair_chart(charts.confusion_matrix(r["confusion_matrix"], name), width="stretch")
+    st.caption("Logistic Regression's test results will be added here once they are reported.")
 
     st.subheader("Limitations")
     st.markdown(
