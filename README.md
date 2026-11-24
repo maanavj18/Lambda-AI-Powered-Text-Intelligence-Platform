@@ -52,7 +52,13 @@ Requires Python 3.10+. Run all commands from the repository root.
 
 ## Streamlit App
 
-The front end is a Streamlit app defined in [app.py](app.py). It has two tabs: **Predict** and **About**. To run it locally, follow [How to Run](#how-to-run) above; the last step is `streamlit run app.py`.
+The front end is a Streamlit app defined in [app.py](app.py). It has two tabs: **Predict**, which opens first, and **About**. To run it locally, follow [How to Run](#how-to-run) above; the last step is `streamlit run app.py`.
+
+| File | Purpose |
+| --- | --- |
+| [app.py](app.py) | Page layout and the two tabs |
+| [app_charts.py](app_charts.py) | The star rating chart and confusion matrices on the About tab |
+| [app_data.py](app_data.py) | The dataset and model numbers the About tab displays, copied from the notebook's outputs. The dataset CSVs are not committed, so the app cannot compute them itself. Update this file when new results are reported. |
 
 ### Deployment
 
@@ -71,10 +77,6 @@ This tab takes one review and shows each model's prediction in its own column.
 | Influential words table | The five words in the review that moved the prediction most, and which way | Read only |
 | **Second model** column | A "Not connected yet" note | Reserved for the second trained model, so the two predictions will sit side by side |
 
-![The Predict tab as it first loads, with the example buttons, the review box and the Predict sentiment button](docs/screenshots/01_predict_tab.png)
-
-*The Predict tab as it first loads.*
-
 **Typical use**
 
 1. Click an example button, or type or paste a review into **Your review**.
@@ -82,11 +84,11 @@ This tab takes one review and shows each model's prediction in its own column.
 3. Read the label, the confidence, and the words behind the prediction.
 4. To try another review, change the text and click the button again.
 
-![A negative review predicted Negative, with the words that influenced the prediction and the reserved second-model column](docs/screenshots/02_negative_prediction.png)
+![A negative review predicted Negative, with the words that influenced the prediction and the reserved second-model column](docs/screenshots/01_negative_prediction.png)
 
 *A negative review: the prediction, the words that drove it, and the column reserved for the second model.*
 
-![A positive review predicted Positive, with the words that influenced the prediction](docs/screenshots/03_positive_prediction.png)
+![A positive review predicted Positive, with the words that influenced the prediction](docs/screenshots/02_positive_prediction.png)
 
 *A positive review.*
 
@@ -94,13 +96,24 @@ If the box is empty or contains only spaces when the button is clicked, the app 
 
 ### Tab 2: About
 
-This tab explains the app to a non-technical reader: what it does, where the data came from and how reviews were labeled, how the connected model works, and its main limitations (word order is ignored, unseen words have no effect). There is nothing to click.
+This tab explains the project to a non-technical reader and summarizes the data and results. Hover over a bar or matrix cell for exact values; there is nothing else to click.
 
-![The About tab with sections on what the app does, the data, the model and limitations](docs/screenshots/04_about.png)
+| Section | What it shows |
+| --- | --- |
+| **What this app does** | A one-paragraph explanation |
+| **Data** | The dataset source and labeling rule; headline figures (50,000 reviews sampled, 42,907 used after cleaning, 84% positive, 79 words on average); a chart of reviews per star rating colored by label; and a table of data quality issues and how each was handled |
+| **Model** | How the connected Logistic Regression model works |
+| **How the models performed** | The 80/20 train/test split, a table of accuracy, precision, recall and F1 on the test set (macro averages) for each model against the majority-class baseline, and a confusion matrix per model |
+| **Limitations** | Where the model can go wrong |
+
+The results section currently shows the majority baseline and Multinomial Naive Bayes, the results reported in the notebook so far. Further models appear automatically once their results are added to [app_data.py](app_data.py).
+
+![The About tab with the data summary, star rating chart, data quality table, model results table and confusion matrices](docs/screenshots/03_about.png)
 
 *The About tab.*
 
 ### Current limitations
 
-- One model (Logistic Regression) is connected. The second-model column is a placeholder until that model is delivered.
+- One model (Logistic Regression) is connected on the Predict tab. The second-model column is a placeholder until that model is delivered.
+- The results section does not yet include Logistic Regression's test results, because they have not been reported yet.
 - The model uses bag-of-words features, so negation ("not good") and sarcasm can be misclassified.
