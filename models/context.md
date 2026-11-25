@@ -1,1 +1,0 @@
-Houses the pre-loaded data and model pipelines. The main app should reference these when making AI requests.
