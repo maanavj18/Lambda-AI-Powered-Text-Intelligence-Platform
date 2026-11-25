@@ -6,6 +6,8 @@ import streamlit as st
 
 from src.evaluate import predict
 
+model = "bow-nb"  # relative to app.py
+
 st.set_page_config(page_title="Food Review Sentiment", page_icon="🍽️")
 
 st.title("🍽️ Fine Food Review Sentiment")
@@ -21,10 +23,10 @@ if st.button("Predict sentiment", type="primary"):
     if not review.strip():
         st.warning("Please enter a review first.")
     else:
-        result, confidence = predict(review)
+        result, confidence = predict(review, model)
         if result == "positive":
             st.success(f"Prediction: **Positive** 👍 ({confidence:.0%} confidence)")
         else:
             st.error(f"Prediction: **Negative** 👎 ({confidence:.0%} confidence)")
 
-st.caption("Model: bag-of-words + logistic regression (models/sentiment.joblib).")
+st.caption("Model: bag-of-words + logistic regression (models/bow-nb.joblib).")
