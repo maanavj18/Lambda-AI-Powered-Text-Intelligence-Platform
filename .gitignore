@@ -1,5 +1,10 @@
 # Dataset files: download them instead (see data/ and the notebook)
 *.csv
+/data/Reviews.csv
+
+# Course materials and secrets
+group_project.pdf
+.env
 
 # Python
 .venv/
