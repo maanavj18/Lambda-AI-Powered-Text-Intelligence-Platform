@@ -7,37 +7,14 @@ import streamlit as st
 
 import app_charts as charts
 import app_data as data
-from src.evaluate import clean, load_model, predict
-
-# Models shown side by side on the Predict tab: display name -> predict function.
-# A predict function takes the review text and returns ("positive" | "negative", confidence).
-# A value of None reserves the column and shows a "not connected yet" note.
-# TODO: when the second trained model is delivered, replace None with its predict function.
-MODELS = {
-    "Logistic Regression": predict,
-    "Second model": None,
-}
+import app_models as models
 
 EXAMPLES = {
     "Positive example": "The coffee arrived fresh and tastes amazing. Rich flavor, no bitterness. Would buy again!",
     "Negative example": "Terrible. The chips were stale and tasted rancid. Very disappointed, I threw the whole bag away.",
     "Mixed example": "The flavor is great, but half the cookies arrived broken and the box was not sealed.",
+    "Negation example": "Not good. The flavor is not great and it is not fresh.",
 }
-
-
-def top_words(text: str, n: int = 5) -> list[tuple[str, float]]:
-    """The words in this review that moved the Logistic Regression model most.
-
-    Returns (word, score) pairs, strongest first. A positive score pushes toward
-    'positive', a negative score toward 'negative'. The score is the word's count
-    in the review times the model's weight for that word.
-    """
-    model = load_model()
-    vectorizer, classifier = model.named_steps["vectorizer"], model.named_steps["classifier"]
-    counts = vectorizer.transform([clean(text)])
-    words = vectorizer.get_feature_names_out()
-    scored = [(words[i], float(counts[0, i] * classifier.coef_[0][i])) for i in counts.indices]
-    return sorted(scored, key=lambda pair: abs(pair[1]), reverse=True)[:n]
 
 
 def show_prediction(label: str, confidence: float) -> None:
@@ -49,10 +26,29 @@ def show_prediction(label: str, confidence: float) -> None:
         st.error(f"**Negative** 👎  \n{shown} confidence")
 
 
-st.set_page_config(page_title="Food Review Sentiment", page_icon="🍽️")
+def show_top_words(name: str, review: str) -> None:
+    words = models.top_words(name, review)
+    if words is None:
+        st.caption("The LSTM reads the words in order, so it has no single-word breakdown.")
+    elif not words:
+        st.caption("None of these words appear in the model's vocabulary.")
+    else:
+        st.caption("Words that influenced this prediction most")
+        st.table(
+            pd.DataFrame(
+                {"Pushes toward": ["Positive" if score > 0 else "Negative" for _, score in words]},
+                index=pd.Index([word for word, _ in words], name="Word"),
+            )
+        )
+
+
+st.set_page_config(page_title="Food Review Sentiment", page_icon="🍽️", layout="wide")
 
 st.title("🍽️ Fine Food Review Sentiment")
-st.write("Type or paste an Amazon fine food review and we'll predict whether it is positive or negative.")
+st.write(
+    "Type or paste an Amazon fine food review and compare whether each of our three models "
+    "thinks it is positive or negative."
+)
 
 predict_tab, about_tab = st.tabs(["Predict", "About"])
 
@@ -66,7 +62,7 @@ with predict_tab:
     review = st.text_area(
         "Your review",
         key="review",
-        height=160,
+        height=140,
         placeholder="e.g. The coffee arrived fresh and tastes amazing. Would buy again!",
     )
 
@@ -74,34 +70,33 @@ with predict_tab:
         if not review.strip():
             st.warning("Please enter a review first.")
         else:
-            for column, (name, predict_fn) in zip(st.columns(len(MODELS)), MODELS.items()):
+            with st.spinner("Running the models..."):
+                results = {name: models.predict(name, review) for name in models.MODELS}
+            for column, (name, (label, confidence)) in zip(st.columns(len(results)), results.items()):
                 with column:
                     st.subheader(name)
-                    if predict_fn is None:
-                        st.info("Not connected yet. This model's prediction will appear here.")
-                        continue
-                    show_prediction(*predict_fn(review))
+                    show_prediction(label, confidence)
+                    show_top_words(name, review)
 
-                    if name == "Logistic Regression":
-                        words = top_words(review)
-                        if words:
-                            st.caption("Words that influenced this prediction most")
-                            st.table(
-                                pd.DataFrame(
-                                    {"Pushes toward": ["Positive" if score > 0 else "Negative" for _, score in words]},
-                                    index=pd.Index([word for word, _ in words], name="Word"),
-                                )
-                            )
-                        else:
-                            st.caption("None of these words appear in the model's vocabulary.")
+            labels = {label for label, _ in results.values()}
+            if len(labels) == 1:
+                st.info(f"All {len(results)} models agree: this review is **{labels.pop()}**.")
+            else:
+                st.info(
+                    "The models disagree on this review. Mixed or sarcastic reviews are where they differ most."
+                )
 
 # ------------------------------------------------------------------ About tab
 with about_tab:
+    metrics = models.load_metrics()
+    results = metrics["models"]
+    splits = metrics["splits"]
+
     st.subheader("What this app does")
     st.write(
         "It reads a food review and predicts whether the writer was happy (positive) or unhappy (negative) "
-        "with the product. The model was trained on real Amazon reviews and learned which words tend to "
-        "appear in each kind of review."
+        "with the product. Three models, each trained on real Amazon reviews, make the prediction "
+        "independently so their answers can be compared."
     )
 
     st.subheader("Data")
@@ -115,64 +110,103 @@ with about_tab:
     )
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Reviews in sample", f"{data.SAMPLE_ROWS:,}")
-    c2.metric("Used after cleaning", f"{data.CLEANING_STEPS['Duplicates removed']:,}")
+    c2.metric("Used after cleaning", f"{data.CLEANED_ROWS:,}")
     c3.metric("Positive", f"{positive_share:.0%}")
     c4.metric("Avg. length", f"{data.AVG_WORDS:.0f} words", help=f"Median: {data.MEDIAN_WORDS} words")
 
-    st.altair_chart(charts.star_distribution(data.SCORE_COUNTS), width="stretch")
-    st.caption(
-        f"Most reviews are 5 stars, so the classes are imbalanced: about {positive_share:.0%} of labeled "
-        "reviews are positive. A model that always says \"positive\" would already be right that often."
-    )
+    chart_column, quality_column = st.columns([3, 2], gap="large")
+    with chart_column:
+        st.altair_chart(charts.star_distribution(data.SCORE_COUNTS), width="stretch")
+        st.caption(
+            f"Most reviews are 5 stars, so the classes are imbalanced: about {positive_share:.0%} of labeled "
+            "reviews are positive. A model that always says \"positive\" would already be right that often."
+        )
+    with quality_column:
+        st.markdown("**Data quality issues**")
+        st.table(pd.DataFrame(
+            {
+                "Issue": [
+                    "Duplicate reviews (same user, time and text)",
+                    *[f"Missing {column}" for column in data.MISSING_VALUES],
+                ],
+                "Count": [f"{data.DUPLICATE_REVIEWS:,}", *[f"{n:,}" for n in data.MISSING_VALUES.values()]],
+                "How it was handled": ["Removed", "Replaced with empty text", "Not used by the models"],
+            }
+        ).set_index("Issue"))
 
-    st.markdown("**Data quality issues**")
-    st.table(pd.DataFrame(
-        {
-            "Issue": [
-                "Duplicate reviews (same user, time and text)",
-                *[f"Missing {column}" for column in data.MISSING_VALUES],
-            ],
-            "Count": [f"{data.DUPLICATE_REVIEWS:,}", *[f"{n:,}" for n in data.MISSING_VALUES.values()]],
-            "How it was handled": ["Removed", "Replaced with empty text", "Not used by the model"],
-        }
-    ).set_index("Issue"))
-
-    st.subheader("Model")
-    st.write(
-        "The connected model is **Logistic Regression** on bag-of-words features. It counts which words appear "
-        "in the review, gives every word a learned weight, and adds the weights up. Word order is ignored. "
-        "A second model will be shown next to it for comparison once it is connected."
+    st.subheader("Models")
+    st.markdown(
+        "- **Logistic Regression** counts which words appear in the review (bag of words), gives every word "
+        "a learned weight, and adds the weights up.\n"
+        "- **Multinomial Naive Bayes** uses the same word counts and compares how often each word shows up "
+        "in positive versus negative reviews.\n"
+        "- **LSTM** is a neural network that reads the review word by word, in order, so it can use context "
+        "such as \"not\" before \"good\".\n\n"
+        "Every model sees the review summary and text together, with HTML tags removed."
     )
 
     st.subheader("How the models performed")
-    train_total = sum(data.SPLIT["Training set"].values())
-    test_total = sum(data.SPLIT["Test set"].values())
+    def count(split: str) -> int:
+        return splits[split]["negative"] + splits[split]["positive"]
+
     st.write(
-        f"Models were trained on {train_total:,} reviews (80%) and scored on {test_total:,} held-out reviews "
-        "(20%) they never saw during training. The majority baseline always answers \"positive\"; a model has "
-        "to beat it to show it is learning anything."
+        f"The models learned from {count('training'):,} reviews, were tuned on {count('validation'):,} validation "
+        f"reviews, and were then scored on {count('test'):,} held-out test reviews they never saw. The majority "
+        "baseline always answers \"positive\"; a model has to beat it to show it is learning anything."
     )
-    results = data.MODEL_RESULTS
     table = pd.DataFrame([
-        {"Model": name, "Accuracy": r["accuracy"], "Precision": r["precision"], "Recall": r["recall"], "F1": r["f1"]}
+        {
+            "Model": name,
+            "Accuracy": r["accuracy"],
+            "Precision": r["macro_precision"],
+            "Recall": r["macro_recall"],
+            "F1": r["macro_f1"],
+            "Training time (s)": r["training_seconds"],
+        }
         for name, r in results.items()
     ]).set_index("Model")
-    st.table(table.style.format("{:.3f}"))
+    score_format = {column: "{:.3f}" for column in ["Accuracy", "Precision", "Recall", "F1"]}
+    st.table(table.style.format({**score_format, "Training time (s)": "{:.2f}"}))
+    best = max((name for name in results if "baseline" not in name.lower()), key=lambda n: results[n]["macro_f1"])
     st.caption(
-        "Precision, recall and F1 are macro averages, so negative and positive reviews count equally. "
-        "That is why the baseline's accuracy looks high while its F1 is low."
+        f"Precision, recall and F1 are macro averages, so negative and positive reviews count equally. "
+        f"**{best}** has the highest F1. Training time is in seconds on one laptop CPU."
     )
 
     st.markdown("**Confusion matrices**")
-    st.caption("Rows are the true label, columns the prediction. The diagonal is correct; the other two cells are mistakes.")
+    st.caption(
+        "Rows are the true label, columns the prediction. The diagonal is correct; the other two cells are "
+        "mistakes. Hover over a cell for details."
+    )
     for column, (name, r) in zip(st.columns(len(results)), results.items()):
         with column:
             st.altair_chart(charts.confusion_matrix(r["confusion_matrix"], name), width="stretch")
-    st.caption("Logistic Regression's test results will be added here once they are reported.")
+
+    if models.LOSS_CURVE_PATH.exists():
+        lstm = results.get("LSTM", {})
+        curve_column, text_column = st.columns([3, 2], gap="large")
+        with curve_column:
+            st.markdown("**LSTM training and validation loss**")
+            st.image(str(models.LOSS_CURVE_PATH), width="stretch")
+        with text_column:
+            st.markdown("&nbsp;")
+            st.caption(
+                "Loss measures how wrong the model's predictions are, so lower is better. Training loss keeps "
+                "falling, but validation loss stops improving after a few epochs: past that point the model is "
+                "memorizing the training reviews rather than learning patterns that carry over. "
+                + (
+                    f"The saved model is from epoch {lstm['selected_epoch']}, the epoch with the best "
+                    "validation F1."
+                    if "selected_epoch" in lstm
+                    else ""
+                )
+            )
 
     st.subheader("Limitations")
     st.markdown(
-        "- Word order is ignored, so \"not good\" and sarcasm can be misread.\n"
-        "- Words the model never saw in training have no effect on the prediction.\n"
+        "- The two bag-of-words models ignore word order, so \"not good\" and sarcasm can be misread.\n"
+        "- The LSTM reads only the first 128 words of a review, so evidence near the end of a long review "
+        "can be missed.\n"
+        "- Words a model never saw in training have no effect on its prediction.\n"
         "- The confidence figure is the model's own estimate, not a guarantee."
     )
