@@ -31,13 +31,13 @@ def show_top_words(name: str, review: str) -> None:
     if words is None:
         st.caption("The LSTM reads the words in order, so it has no single-word breakdown.")
     elif not words:
-        st.caption("None of these words appear in the model's vocabulary.")
+        st.caption("None of these words or phrases appear in the model's vocabulary.")
     else:
-        st.caption("Words that influenced this prediction most")
+        st.caption("Words or phrases that influenced this prediction most")
         st.table(
             pd.DataFrame(
                 {"Pushes toward": ["Positive" if score > 0 else "Negative" for _, score in words]},
-                index=pd.Index([word for word, _ in words], name="Word"),
+                index=pd.Index([word for word, _ in words], name="Phrase"),
             )
         )
 
