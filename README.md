@@ -20,7 +20,7 @@ The comparison uses bag-of-words counts for Multinomial Naive Bayes and Logistic
 
 ## Data and Cleaning
 
-All the data is prepared and cleaned in [notebooks/1_data_clean.ipynb](notebooks/1_data_clean.ipynb), and the same steps run again in [src/preprocessing.py](src/preprocessing.py) when the models are trained.
+All the data is prepared and cleaned in [notebooks/1_data_clean.ipynb](notebooks/1_data_clean.ipynb). The same steps run in [src/preprocessing.py](src/preprocessing.py), either on their own or again when the models are trained.
 
 ### 1. Data sampling
 For data sampling we took a sample of 50k reviews from the full Amazon Fine Food Reviews dataset on [Kaggle](https://www.kaggle.com/datasets/snap/amazon-fine-food-reviews), which has 568,454 reviews in total. The notebook imports the data straight from Kaggle using `kagglehub`, so nobody has to download it themselves. The seed is set to `seed = 45`, so anyone in the group who runs the notebook gets the exact same 50k reviews. None of the CSV files are uploaded to the repo.
@@ -83,10 +83,10 @@ Use Python 3.13, the version used for the comparison. Run all commands from the 
 ## Reproduce the model comparison
 
 1. Set up the virtual environment and install the pinned dependencies above. The recorded run used the CPU build of PyTorch.
-2. Put `Reviews.csv` in `data/`. If the file is absent, the training script uses KaggleHub to download dataset version 2. To provide a CSV at a different path, pass `--reviews path/to/Reviews.csv`. [Amazon Fine Food Reviews](https://www.kaggle.com/datasets/snap/amazon-fine-food-reviews)
-3. Train and evaluate all three models with `python -m src.train`. The default run uses four CPU threads, at most 12 LSTM epochs, and early stopping after three epochs without improvement in validation macro F1.
+2. Download the dataset and write the cleaned sample with `python -m src.preprocessing`. This saves Kaggle's `Reviews.csv` and `reviews_cleaned.csv` in `data/`. If `Reviews.csv` is already there, that file is used. To read a CSV from another path, pass `--reviews path/to/Reviews.csv`. [Amazon Fine Food Reviews](https://www.kaggle.com/datasets/snap/amazon-fine-food-reviews)
+3. Train and evaluate all three models with `python -m src.train`. If `data/Reviews.csv` is still missing, training downloads it the same way. The default run uses four CPU threads, at most 12 LSTM epochs, and early stopping after three epochs without improvement in validation macro F1. Pass `--reviews path/to/Reviews.csv` to train from another copy of the raw file.
 
-The command writes fitted Naive Bayes and Logistic Regression pipelines, an LSTM checkpoint, the loss curve, and full-precision metrics to `models/`. Use `--models-dir` to write the outputs to another directory. The comparison summarizes held-out scores, confusion matrices, and model settings. [Model comparison](ml_engineer_model_comparison.md) · [Run metrics](models/comparison_metrics.json)
+Training writes fitted Naive Bayes and Logistic Regression pipelines, an LSTM checkpoint, the loss curve, and full-precision metrics to `models/`. Use `--models-dir` to write the outputs to another directory. The comparison summarizes held-out scores, confusion matrices, and model settings. [Model comparison](ml_engineer_model_comparison.md) · [Run metrics](models/comparison_metrics.json)
 
 For inference, call `load_predictor` from `src.predict` with `"logistic_regression"`, `"naive_bayes"`, or `"lstm"`. The returned function accepts a review and an optional summary and returns `0` for negative or `1` for positive.
 
