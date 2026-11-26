@@ -10,10 +10,10 @@ from .preprocessing import clean_review
 
 
 MODELS_DIR = Path(__file__).resolve().parents[1] / "models"
-CLASSICAL_MODELS = ("logistic_regression", "naive_bayes")
+CLASSICAL_MODELS = ("logistic_regression", "naive_bayes", "naive_bayes_improved")
 
 
-@lru_cache(maxsize=3)
+@lru_cache(maxsize=4)
 def load_predictor(name: str) -> Callable[[str, str], int]:
     """Return a predictor accepting review text and an optional summary."""
     if name in CLASSICAL_MODELS:
@@ -42,4 +42,6 @@ def load_predictor(name: str) -> Callable[[str, str], int]:
 
         return predict_lstm
 
-    raise ValueError(f"Unknown model {name!r}. Choose logistic_regression, naive_bayes, or lstm.")
+    raise ValueError(
+        f"Unknown model {name!r}. Choose logistic_regression, naive_bayes, naive_bayes_improved, or lstm."
+    )

@@ -31,13 +31,13 @@ def show_top_words(name: str, review: str) -> None:
     if words is None:
         st.caption("The LSTM reads the words in order, so it has no single-word breakdown.")
     elif not words:
-        st.caption("None of these words appear in the model's vocabulary.")
+        st.caption("None of these words or phrases appear in the model's vocabulary.")
     else:
-        st.caption("Words that influenced this prediction most")
+        st.caption("Words or phrases that influenced this prediction most")
         st.table(
             pd.DataFrame(
                 {"Pushes toward": ["Positive" if score > 0 else "Negative" for _, score in words]},
-                index=pd.Index([word for word, _ in words], name="Word"),
+                index=pd.Index([word for word, _ in words], name="Phrase"),
             )
         )
 
@@ -46,7 +46,7 @@ st.set_page_config(page_title="Food Review Sentiment", page_icon="🍽️", layo
 
 st.title("🍽️ Fine Food Review Sentiment")
 st.write(
-    "Type or paste an Amazon fine food review and compare whether each of our three models "
+    "Type or paste an Amazon fine food review and compare whether each model "
     "thinks it is positive or negative."
 )
 
@@ -95,7 +95,7 @@ with about_tab:
     st.subheader("What this app does")
     st.write(
         "It reads a food review and predicts whether the writer was happy (positive) or unhappy (negative) "
-        "with the product. Three models, each trained on real Amazon reviews, make the prediction "
+        "with the product. Four models, each trained on real Amazon reviews, make the prediction "
         "independently so their answers can be compared."
     )
 
@@ -140,6 +140,8 @@ with about_tab:
         "a learned weight, and adds the weights up.\n"
         "- **Multinomial Naive Bayes** uses the same word counts and compares how often each word shows up "
         "in positive versus negative reviews.\n"
+        "- **Improved Naive Bayes** does the same comparison, but on phrases of one to three words, and it "
+        "only checks whether each phrase appears rather than how many times.\n"
         "- **LSTM** is a neural network that reads the review word by word, in order, so it can use context "
         "such as \"not\" before \"good\".\n\n"
         "Every model sees the review summary and text together, with HTML tags removed."
@@ -150,9 +152,11 @@ with about_tab:
         return splits[split]["negative"] + splits[split]["positive"]
 
     st.write(
-        f"The models learned from {count('training'):,} reviews, were tuned on {count('validation'):,} validation "
-        f"reviews, and were then scored on {count('test'):,} held-out test reviews they never saw. The majority "
-        "baseline always answers \"positive\"; a model has to beat it to show it is learning anything."
+        f"Logistic Regression, Multinomial Naive Bayes, and the LSTM learned from {count('training'):,} reviews "
+        f"and were tuned on {count('validation'):,} validation reviews. Improved Naive Bayes follows the notebook: "
+        f"its settings were chosen with 5-fold cross-validation on those {count('training') + count('validation'):,} "
+        f"reviews together. Every model was then scored on the same {count('test'):,} held-out test reviews. "
+        "The majority baseline always answers \"positive\"; a model has to beat it to show it is learning anything."
     )
     table = pd.DataFrame([
         {
@@ -204,7 +208,9 @@ with about_tab:
 
     st.subheader("Limitations")
     st.markdown(
-        "- The two bag-of-words models ignore word order, so \"not good\" and sarcasm can be misread.\n"
+        "- Logistic Regression and Multinomial Naive Bayes ignore word order, so \"not good\" and sarcasm "
+        "can be misread. Improved Naive Bayes keeps phrases of up to three words, but longer context can "
+        "still be missed.\n"
         "- The LSTM reads only the first 128 words of a review, so evidence near the end of a long review "
         "can be missed.\n"
         "- Words a model never saw in training have no effect on its prediction.\n"
