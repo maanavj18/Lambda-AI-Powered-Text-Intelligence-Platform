@@ -150,3 +150,7 @@ This tab explains the project to a non-technical reader and summarizes the data 
 ![The About tab showing the dataset summary, headline figures, star rating chart and data quality table](docs/screenshots/02_about.png)
 
 *The About tab: the dataset summary, star rating chart and data quality issues. The model results, confusion matrices and loss curve follow further down the page.*
+
+![The About tab's confusion matrices for the baseline and all four models, and the LSTM training and validation loss curve](docs/screenshots/03_about_results.png)
+
+*Further down the About tab: a confusion matrix for each model on the 8,582 test reviews, and the LSTM's training and validation loss by epoch.*
