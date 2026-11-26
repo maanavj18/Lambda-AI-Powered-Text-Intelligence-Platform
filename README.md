@@ -70,7 +70,7 @@ Use Python 3.13, the version used for the comparison. Run all commands from the 
    python -m pip install -r requirements.txt
 ```
 
-3. **Trained models.** The app loads the three models Maanav exported to `models/` (`logistic_regression.joblib`, `naive_bayes.joblib`, `lstm.pt`) and their test results from `models/comparison_metrics.json`. These files are committed, so no extra step is needed. To retrain them, see [Reproduce the model comparison](#reproduce-the-model-comparison).
+3. **Trained models.** The app loads the models in `models/` (`logistic_regression.joblib`, `naive_bayes.joblib`, `naive_bayes_improved.joblib`, `lstm.pt`) and their test results from `models/comparison_metrics.json`. These files are committed, so no extra step is needed. To retrain them, see [Reproduce the model comparison](#reproduce-the-model-comparison).
 
 4. **Launch the app**
 
@@ -78,17 +78,17 @@ Use Python 3.13, the version used for the comparison. Run all commands from the 
    streamlit run app.py
 ```
 
-   Streamlit opens the app in your browser (default http://localhost:8501). Type a review and click **Predict sentiment** to see all three models' predictions.
+   Streamlit opens the app in your browser (default http://localhost:8501). Type a review and click **Predict sentiment** to see each model's prediction.
 
 ## Reproduce the model comparison
 
 1. Set up the virtual environment and install the pinned dependencies above. The recorded run used the CPU build of PyTorch.
 2. Download the dataset and write the cleaned sample with `python -m src.preprocessing`. This saves Kaggle's `Reviews.csv` and `reviews_cleaned.csv` in `data/`. If `Reviews.csv` is already there, that file is used. To read a CSV from another path, pass `--reviews path/to/Reviews.csv`. [Amazon Fine Food Reviews](https://www.kaggle.com/datasets/snap/amazon-fine-food-reviews)
-3. Train and evaluate all three models with `python -m src.train`. If `data/Reviews.csv` is still missing, training downloads it the same way. The default run uses four CPU threads, at most 12 LSTM epochs, and early stopping after three epochs without improvement in validation macro F1. Pass `--reviews path/to/Reviews.csv` to train from another copy of the raw file.
+3. Train and evaluate the models with `python -m src.train`. If `data/Reviews.csv` is still missing, training downloads it the same way. The default run uses four CPU threads, at most 12 LSTM epochs, and early stopping after three epochs without improvement in validation macro F1. Pass `--reviews path/to/Reviews.csv` to train from another copy of the raw file. The same command also fits the notebook's improved Naive Bayes (binary phrases of up to three words, chosen by 5-fold macro F1) and writes it to `models/naive_bayes_improved.joblib`.
 
-Training writes fitted Naive Bayes and Logistic Regression pipelines, an LSTM checkpoint, the loss curve, and full-precision metrics to `models/`. Use `--models-dir` to write the outputs to another directory. The comparison summarizes held-out scores, confusion matrices, and model settings. [Model comparison](ml_engineer_model_comparison.md) · [Run metrics](models/comparison_metrics.json)
+Training writes fitted Naive Bayes, improved Naive Bayes, and Logistic Regression pipelines, an LSTM checkpoint, the loss curve, and full-precision metrics to `models/`. Use `--models-dir` to write the outputs to another directory. The comparison summarizes held-out scores, confusion matrices, and model settings. [Model comparison](ml_engineer_model_comparison.md) · [Run metrics](models/comparison_metrics.json)
 
-For inference, call `load_predictor` from `src.predict` with `"logistic_regression"`, `"naive_bayes"`, or `"lstm"`. The returned function accepts a review and an optional summary and returns `0` for negative or `1` for positive.
+For inference, call `load_predictor` from `src.predict` with `"logistic_regression"`, `"naive_bayes"`, `"naive_bayes_improved"`, or `"lstm"`. The returned function accepts a review and an optional summary and returns `0` for negative or `1` for positive.
 
 ## Streamlit App
 
@@ -109,22 +109,22 @@ The app is not deployed yet, so there is no live URL. The planned target is Stre
 
 ### Tab 1: Predict
 
-This tab takes one review and shows all three models' predictions side by side.
+This tab takes one review and shows each model's prediction side by side.
 
 | Element | What it shows | How the user interacts |
 | --- | --- | --- |
 | Example buttons | **Positive**, **Negative**, **Mixed** and **Negation** examples | Click one to fill the review box with a ready-made review |
 | **Your review** text area | The review to classify | Type or paste a review, or edit an example |
-| **Predict sentiment** button | The primary action | Click to run all three models on the text in the box |
-| One column per model | Logistic Regression, Multinomial Naive Bayes and LSTM: each shows a green Positive or red Negative label and the model's confidence | Read only |
-| Influential words table | For the two bag-of-words models, the five words in the review that moved the prediction most, and which way. The LSTM reads words in order, so it has no per-word breakdown | Read only |
-| Agreement note | Whether the three models agree or disagree | Read only |
+| **Predict sentiment** button | The primary action | Click to run every model on the text in the box |
+| One column per model | Logistic Regression, Multinomial Naive Bayes, Improved Naive Bayes, and LSTM: each shows a green Positive or red Negative label and the model's confidence | Read only |
+| Influential words table | For the bag-of-words models, the five words or phrases in the review that moved the prediction most, and which way. The LSTM reads words in order, so it has no per-word breakdown | Read only |
+| Agreement note | Whether the models agree or disagree | Read only |
 
 **Typical use**
 
 1. Click an example button, or type or paste a review into **Your review**.
 2. Click **Predict sentiment**.
-3. Compare the three columns: the label, the confidence, and the words behind each bag-of-words prediction.
+3. Compare the columns: the label, the confidence, and the words behind each bag-of-words prediction.
 4. To try another review, change the text and click the button again.
 
 ![A negative review with all three models predicting Negative](docs/screenshots/01_negative_prediction.png)
@@ -145,7 +145,7 @@ This tab explains the project to a non-technical reader and summarizes the data 
 | --- | --- |
 | **What this app does** | A one-paragraph explanation |
 | **Data** | The dataset source and labeling rule; headline figures (50,000 reviews sampled, 42,907 used after cleaning, 84% positive, 79 words on average); a chart of reviews per star rating colored by label; and a table of data quality issues and how each was handled |
-| **Models** | How each of the three models makes its prediction, in plain language |
+| **Models** | How each model makes its prediction, in plain language |
 | **How the models performed** | The training, validation and test split sizes; a table of accuracy, precision, recall, F1 (macro averages) and training time for each model and the majority-class baseline; a confusion matrix per model; and the LSTM's training and validation loss curve |
 | **Limitations** | Where the models can go wrong |
 

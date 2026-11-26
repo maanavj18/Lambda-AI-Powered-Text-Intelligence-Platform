@@ -17,6 +17,7 @@ from joblib import dump
 from sklearn.dummy import DummyClassifier
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import GridSearchCV
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import Pipeline
 from threadpoolctl import threadpool_limits
@@ -87,6 +88,71 @@ def fit_classical(train, validation, test, output):
         print(f"{name}: {score['macro_f1']:.4f} test macro F1", flush=True)
 
     return rows, len(vectorizer.vocabulary_)
+
+
+def fit_improved_naive_bayes(train, validation, test, output, threads):
+    """Fit the notebook's phrase-level Naive Bayes and export it separately.
+
+    The search matches the Milestone 3 grid: binary counts, phrases of up to three
+    words, and 5-fold macro F1 on the notebook's training split (this script's
+    training and validation reviews together). The test split is scored once.
+    """
+    development = pd.concat([train, validation]).sort_index()
+    search = GridSearchCV(
+        Pipeline([
+            ("vectorizer", CountVectorizer(min_df=2, binary=True)),
+            ("classifier", MultinomialNB()),
+        ]),
+        {
+            "vectorizer__ngram_range": [(1, 2), (1, 3)],
+            "classifier__alpha": [0.1, 0.2, 0.3, 0.5, 1.0],
+        },
+        cv=5,
+        scoring="f1_macro",
+        n_jobs=threads,
+        refit=False,
+        verbose=1,
+    )
+    search.fit(development.clean, development.label)
+    best = search.best_params_
+    pipeline = Pipeline([
+        (
+            "vectorizer",
+            CountVectorizer(
+                min_df=2, binary=True, ngram_range=best["vectorizer__ngram_range"]
+            ),
+        ),
+        ("classifier", MultinomialNB(alpha=best["classifier__alpha"])),
+    ])
+    start = perf_counter()
+    pipeline.fit(development.clean, development.label)
+    elapsed = perf_counter() - start
+    score = measure(test.label, pipeline.predict(test.clean))
+    result = {
+        **score,
+        "training_seconds": elapsed,
+        "vocabulary_size": len(pipeline.named_steps["vectorizer"].vocabulary_),
+        "parameters": {
+            "min_df": 2,
+            "binary": True,
+            "ngram_range": list(best["vectorizer__ngram_range"]),
+            "alpha": best["classifier__alpha"],
+        },
+        "cross_validation_macro_f1": float(search.best_score_),
+        "cross_validation_trials": [
+            {
+                "ngram_range": list(params["vectorizer__ngram_range"]),
+                "alpha": params["classifier__alpha"],
+                "macro_f1": float(mean_f1),
+            }
+            for params, mean_f1 in zip(
+                search.cv_results_["params"], search.cv_results_["mean_test_score"]
+            )
+        ],
+    }
+    dump(pipeline, output / "naive_bayes_improved.joblib")
+    print(f"Improved Naive Bayes: {score['macro_f1']:.4f} test macro F1", flush=True)
+    return result
 
 
 def lstm_loader(reviews, vocabulary, shuffle=False):
@@ -220,6 +286,9 @@ def main():
         staging = Path(temporary)
         with threadpool_limits(limits=args.threads):
             rows, bow_vocabulary_size = fit_classical(train, validation, test, staging)
+            rows["Improved Naive Bayes"] = fit_improved_naive_bayes(
+                train, validation, test, staging, args.threads
+            )
             rows["LSTM"] = fit_lstm(train, validation, test, staging, args.epochs)
 
         results = comparison_metrics(rows, splits, bow_vocabulary_size, args.threads)

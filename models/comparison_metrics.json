@@ -89,6 +89,116 @@
         }
       ]
     },
+    "Improved Naive Bayes": {
+      "accuracy": 0.9401072011186203,
+      "macro_precision": 0.8986412685301535,
+      "macro_recall": 0.8699481111073055,
+      "macro_f1": 0.8834339240241942,
+      "confusion_matrix": [
+        [
+          1042,
+          316
+        ],
+        [
+          198,
+          7026
+        ]
+      ],
+      "training_seconds": 8.893026100005955,
+      "vocabulary_size": 452460,
+      "parameters": {
+        "min_df": 2,
+        "binary": true,
+        "ngram_range": [
+          1,
+          3
+        ],
+        "alpha": 0.3
+      },
+      "cross_validation_macro_f1": 0.8855330679207902,
+      "cross_validation_trials": [
+        {
+          "ngram_range": [
+            1,
+            2
+          ],
+          "alpha": 0.1,
+          "macro_f1": 0.8700057072019888
+        },
+        {
+          "ngram_range": [
+            1,
+            3
+          ],
+          "alpha": 0.1,
+          "macro_f1": 0.8740029748868107
+        },
+        {
+          "ngram_range": [
+            1,
+            2
+          ],
+          "alpha": 0.2,
+          "macro_f1": 0.8774680460486832
+        },
+        {
+          "ngram_range": [
+            1,
+            3
+          ],
+          "alpha": 0.2,
+          "macro_f1": 0.8850537911171275
+        },
+        {
+          "ngram_range": [
+            1,
+            2
+          ],
+          "alpha": 0.3,
+          "macro_f1": 0.8802998696825991
+        },
+        {
+          "ngram_range": [
+            1,
+            3
+          ],
+          "alpha": 0.3,
+          "macro_f1": 0.8855330679207902
+        },
+        {
+          "ngram_range": [
+            1,
+            2
+          ],
+          "alpha": 0.5,
+          "macro_f1": 0.8779969739575642
+        },
+        {
+          "ngram_range": [
+            1,
+            3
+          ],
+          "alpha": 0.5,
+          "macro_f1": 0.8807828470948061
+        },
+        {
+          "ngram_range": [
+            1,
+            2
+          ],
+          "alpha": 1.0,
+          "macro_f1": 0.8509104927355569
+        },
+        {
+          "ngram_range": [
+            1,
+            3
+          ],
+          "alpha": 1.0,
+          "macro_f1": 0.832956287064589
+        }
+      ]
+    },
     "Logistic Regression": {
       "accuracy": 0.9321836401771149,
       "macro_precision": 0.8876599503437739,

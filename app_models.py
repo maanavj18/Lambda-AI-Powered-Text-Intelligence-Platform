@@ -21,9 +21,10 @@ LOSS_CURVE_PATH = MODELS_DIR / "lstm_loss.png"
 MODELS = {
     "Logistic Regression": "logistic_regression",
     "Multinomial Naive Bayes": "naive_bayes",
+    "Improved Naive Bayes": "naive_bayes_improved",
     "LSTM": "lstm",
 }
-BAG_OF_WORDS_MODELS = ("logistic_regression", "naive_bayes")
+BAG_OF_WORDS_MODELS = ("logistic_regression", "naive_bayes", "naive_bayes_improved")
 
 
 @lru_cache(maxsize=None)
