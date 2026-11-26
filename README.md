@@ -127,13 +127,11 @@ This tab takes one review and shows each model's prediction side by side.
 3. Compare the columns: the label, the confidence, and the words behind each bag-of-words prediction.
 4. To try another review, change the text and click the button again.
 
-![A negative review with all four models predicting Negative](docs/screenshots/01_negative_prediction.png)
+![The Predict tab with the negative example entered and all four models predicting Negative](docs/screenshots/01_predict.png)
 
-*A clearly negative review: all four models agree.*
+*The Predict tab: the negative example, with all four models predicting Negative.*
 
-![The negation example, where Logistic Regression and Multinomial Naive Bayes predict Positive, and Improved Naive Bayes and the LSTM predict Negative](docs/screenshots/02_models_disagree.png)
-
-*The negation example: Logistic Regression and Multinomial Naive Bayes count single words such as "good", "great" and "fresh" as positive. Improved Naive Bayes, which also reads phrases such as "not good" and "not fresh", and the LSTM, which reads word order, both correctly predict Negative.*
+On mixed or negated reviews the models can disagree. For the **Negation example**, Logistic Regression and Multinomial Naive Bayes predict Positive because they count single words such as "good" and "great", while Improved Naive Bayes, which also reads phrases such as "not good", and the LSTM, which reads word order, both predict Negative.
 
 If the box is empty or contains only spaces when the button is clicked, the app shows a "Please enter a review first." warning and makes no prediction.
 
@@ -149,6 +147,10 @@ This tab explains the project to a non-technical reader and summarizes the data 
 | **How the models performed** | The training, validation and test split sizes; a table of accuracy, precision, recall, F1 (macro averages) and training time for each model and the majority-class baseline; a confusion matrix per model; and the LSTM's training and validation loss curve |
 | **Limitations** | Where the models can go wrong |
 
-![The About tab with the data summary, models, results table, five confusion matrices and the LSTM loss curve](docs/screenshots/03_about.png)
+![The About tab showing the dataset summary, headline figures, star rating chart and data quality table](docs/screenshots/02_about.png)
 
-*The About tab.*
+*The About tab: the dataset summary, star rating chart and data quality issues. The model results, confusion matrices and loss curve follow further down the page.*
+
+![The About tab's confusion matrices for the baseline and all four models, and the LSTM training and validation loss curve](docs/screenshots/03_about_results.png)
+
+*Further down the About tab: a confusion matrix for each model on the 8,582 test reviews, and the LSTM's training and validation loss by epoch.*

@@ -43,7 +43,8 @@ def star_distribution(score_counts: dict[int, int]) -> alt.Chart:
             alt.Tooltip("Label:N", title="Labeled as"),
         ],
     )
-    labels = base.mark_text(dy=-8).encode(text=alt.Text("Reviews:Q", format=","))
+    # Mid gray stays readable on both the light and the dark Streamlit theme.
+    labels = base.mark_text(dy=-8, color="#8a8985").encode(text=alt.Text("Reviews:Q", format=","))
     return (bars + labels).properties(height=320)
 
 
