@@ -127,13 +127,13 @@ This tab takes one review and shows each model's prediction side by side.
 3. Compare the columns: the label, the confidence, and the words behind each bag-of-words prediction.
 4. To try another review, change the text and click the button again.
 
-![A negative review with all three models predicting Negative](docs/screenshots/01_negative_prediction.png)
+![A negative review with all four models predicting Negative](docs/screenshots/01_negative_prediction.png)
 
-*A clearly negative review: all three models agree.*
+*A clearly negative review: all four models agree.*
 
-![The negation example, where Logistic Regression and Naive Bayes predict Positive and the LSTM predicts Negative](docs/screenshots/02_models_disagree.png)
+![The negation example, where Logistic Regression and Multinomial Naive Bayes predict Positive, and Improved Naive Bayes and the LSTM predict Negative](docs/screenshots/02_models_disagree.png)
 
-*The negation example: the bag-of-words models count "good", "great" and "fresh" as positive, while the LSTM, which reads word order, correctly predicts Negative.*
+*The negation example: Logistic Regression and Multinomial Naive Bayes count single words such as "good", "great" and "fresh" as positive. Improved Naive Bayes, which also reads phrases such as "not good" and "not fresh", and the LSTM, which reads word order, both correctly predict Negative.*
 
 If the box is empty or contains only spaces when the button is clicked, the app shows a "Please enter a review first." warning and makes no prediction.
 
@@ -149,6 +149,6 @@ This tab explains the project to a non-technical reader and summarizes the data 
 | **How the models performed** | The training, validation and test split sizes; a table of accuracy, precision, recall, F1 (macro averages) and training time for each model and the majority-class baseline; a confusion matrix per model; and the LSTM's training and validation loss curve |
 | **Limitations** | Where the models can go wrong |
 
-![The About tab with the data summary, models, results table, four confusion matrices and the LSTM loss curve](docs/screenshots/03_about.png)
+![The About tab with the data summary, models, results table, five confusion matrices and the LSTM loss curve](docs/screenshots/03_about.png)
 
 *The About tab.*
